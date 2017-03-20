@@ -18,9 +18,6 @@ import (
 	types "github.com/docker/docker/api/types/swarm"
 	timetypes "github.com/docker/docker/api/types/time"
 	"github.com/docker/docker/daemon/cluster/convert"
-	"github.com/docker/docker/daemon/logger"
-	"github.com/docker/docker/pkg/ioutils"
-	"github.com/docker/docker/pkg/stdcopy"
 	runconfigopts "github.com/docker/docker/runconfig/opts"
 	swarmapi "github.com/docker/swarmkit/api"
 	gogotypes "github.com/gogo/protobuf/types"
@@ -303,33 +300,25 @@ func (c *Cluster) RemoveService(input string) error {
 }
 
 // ServiceLogs collects service logs and writes them back to `config.OutStream`
-func (c *Cluster) ServiceLogs(ctx context.Context, selector *backend.LogSelector, config *backend.ContainerLogsConfig, started chan struct{}) error {
+func (c *Cluster) ServiceLogs(ctx context.Context, selector *backend.LogSelector, config *backend.ContainerLogsConfig) (rerr error) {
 	c.mu.RLock()
+	defer c.mu.RUnlock()
+	// if we return nil, it means we're still using this channel, so don't close
+	// it
 	defer func() {
-		select {
-		case <-started:
-			// if we've started streaming logs, we are no longer holding the
-			// lock and do not have to release it
-			return
-		default:
-			// before we start, though, we're holding this lock and it needs to
-			// be released
-			c.mu.RUnlock()
+		if rerr != nil {
+			close(config.Messages)
 		}
 	}()
+
 	state := c.currentNodeState()
 	if !state.IsActiveManager() {
 		return c.errNoManager(state)
 	}
 
-	swarmSelector, tty, err := convertSelector(ctx, state.controlClient, selector)
+	swarmSelector, err := convertSelector(ctx, state.controlClient, selector)
 	if err != nil {
 		return errors.Wrap(err, "error making log selector")
-	}
-
-	// TODO(dperny) this goes away when we support TTY logs, which is in the works
-	if tty {
-		return errors.New("service logs not supported on tasks with a TTY attached")
 	}
 
 	// set the streams we'll use
@@ -343,6 +332,9 @@ func (c *Cluster) ServiceLogs(ctx context.Context, selector *backend.LogSelector
 
 	// Get tail value squared away - the number of previous log lines we look at
 	var tail int64
+	// in ContainerLogs, if the tail value is ANYTHING non-integer, we just set
+	// it to -1 (all). i don't agree with that, but i also think no tail value
+	// should be legitimate. if you don't pass tail, we assume you want "all"
 	if config.Tail == "all" || config.Tail == "" {
 		// tail of 0 means send all logs on the swarmkit side
 		tail = 0
@@ -392,103 +384,89 @@ func (c *Cluster) ServiceLogs(ctx context.Context, selector *backend.LogSelector
 		return err
 	}
 
-	wf := ioutils.NewWriteFlusher(config.OutStream)
-	defer wf.Close()
+	go func() {
+		defer close(config.Messages)
+		for {
+			// Check the context before doing anything.
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			subscribeMsg, err := stream.Recv()
+			if err == io.EOF {
+				return
+			}
+			// if we're not io.EOF, push the message in and return
+			if err != nil {
+				config.Messages <- &backend.LogMessage{Err: err}
+				return
+			}
 
-	// Release the lock before starting the stream.
-	//
-	// this feels like it could be racy because we would double unlock if we
-	// somehow returned right after we unlocked but before we closed, but I do
-	// not think such a thing is possible. i wish it were possible to atomically
-	// close and unlock but that might be overkill. programming is hard.
-	c.mu.RUnlock()
-	close(started)
-
-	wf.Flush()
-
-	outStream := stdcopy.NewStdWriter(wf, stdcopy.Stdout)
-	errStream := stdcopy.NewStdWriter(wf, stdcopy.Stderr)
-
-	for {
-		// Check the context before doing anything.
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		subscribeMsg, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-
-		for _, msg := range subscribeMsg.Messages {
-			data := []byte{}
-
-			if config.Timestamps {
-				ts, err := gogotypes.TimestampFromProto(msg.Timestamp)
+			for _, msg := range subscribeMsg.Messages {
+				// make a new message
+				m := new(backend.LogMessage)
+				m.Attrs = make(backend.LogAttributes)
+				// add the timestamp, adding the error if it fails
+				m.Timestamp, err = gogotypes.TimestampFromProto(msg.Timestamp)
 				if err != nil {
-					return err
+					m.Err = err
 				}
-				data = append(data, []byte(ts.Format(logger.TimeFormat)+" ")...)
-			}
+				m.Attrs[fmt.Sprintf("%v.node.id", contextPrefix)] = msg.Context.NodeID
+				m.Attrs[fmt.Sprintf("%v.service.id", contextPrefix)] = msg.Context.ServiceID
+				m.Attrs[fmt.Sprintf("%v.task.id", contextPrefix)] = msg.Context.TaskID
+				switch msg.Stream {
+				case swarmapi.LogStreamStdout:
+					m.Source = "stdout"
+				case swarmapi.LogStreamStderr:
+					m.Source = "stderr"
+				}
+				m.Line = msg.Data
 
-			data = append(data, []byte(fmt.Sprintf("%s.node.id=%s,%s.service.id=%s,%s.task.id=%s ",
-				contextPrefix, msg.Context.NodeID,
-				contextPrefix, msg.Context.ServiceID,
-				contextPrefix, msg.Context.TaskID,
-			))...)
-
-			data = append(data, msg.Data...)
-
-			switch msg.Stream {
-			case swarmapi.LogStreamStdout:
-				outStream.Write(data)
-			case swarmapi.LogStreamStderr:
-				errStream.Write(data)
+				// there could be a case where the reader stops accepting
+				// messages and the context is canceled. we need to check that
+				// here, or otherwise we risk blocking forever on the message
+				// send.
+				select {
+				case <-ctx.Done():
+					return
+				case config.Messages <- m:
+				}
 			}
 		}
-	}
+	}()
+	return nil
 }
 
 // convertSelector takes a backend.LogSelector, which contains raw names that
 // may or may not be valid, and converts them to an api.LogSelector proto. It
-// also returns a boolean, true if any of the services use a TTY (false
-// otherwise) and an error if something fails
-func convertSelector(ctx context.Context, cc swarmapi.ControlClient, selector *backend.LogSelector) (*swarmapi.LogSelector, bool, error) {
-	// if ANY tasks use a TTY, don't mux streams
-	var tty bool
+// returns an error if something fails
+func convertSelector(ctx context.Context, cc swarmapi.ControlClient, selector *backend.LogSelector) (*swarmapi.LogSelector, error) {
 	// don't rely on swarmkit to resolve IDs, do it ourselves
 	swarmSelector := &swarmapi.LogSelector{}
 	for _, s := range selector.Services {
 		service, err := getService(ctx, cc, s)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		c := service.Spec.Task.GetContainer()
 		if c == nil {
-			return nil, false, errors.New("logs only supported on container tasks")
+			return nil, errors.New("logs only supported on container tasks")
 		}
-		// set TTY true if we have a TTY service, or if it's already true
-		tty = tty || c.TTY
 		swarmSelector.ServiceIDs = append(swarmSelector.ServiceIDs, service.ID)
 	}
 	for _, t := range selector.Tasks {
 		task, err := getTask(ctx, cc, t)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		c := task.Spec.GetContainer()
 		if c == nil {
-			return nil, false, errors.New("logs only supported on container tasks")
+			return nil, errors.New("logs only supported on container tasks")
 		}
-		tty = tty || c.TTY
 		swarmSelector.TaskIDs = append(swarmSelector.TaskIDs, task.ID)
 	}
-	return swarmSelector, tty, nil
+	return swarmSelector, nil
 }
 
 // imageWithDigestString takes an image such as name or name:tag
