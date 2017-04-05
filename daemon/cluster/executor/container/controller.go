@@ -480,10 +480,15 @@ func (r *controller) Logs(ctx context.Context, publisher exec.LogPublisher, opti
 			stream = api.LogStreamStderr
 		}
 
+		for k, v := range msg.Attrs {
+			log.L.Debugf("adding attr %q=%q", k, v)
+		}
+
 		if err := publisher.Publish(ctx, api.LogMessage{
 			Context:   msgctx,
 			Timestamp: tsp,
 			Stream:    stream,
+			Details:   msg.Attrs,
 			Data:      msg.Line,
 		}); err != nil {
 			return errors.Wrap(err, "failed to publish log message")

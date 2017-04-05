@@ -57,7 +57,7 @@ func (s *DockerSwarmSuite) TestServiceLogs(c *check.C) {
 // output.
 func countLogLines(d *daemon.Swarm, name string) func(*check.C) (interface{}, check.CommentInterface) {
 	return func(c *check.C) (interface{}, check.CommentInterface) {
-		result := icmd.RunCmd(d.Command("service", "logs", "-t", name))
+		result := icmd.RunCmd(d.Command("service", "logs", "-t", "--pretty=false", name))
 		result.Assert(c, icmd.Expected{})
 		lines := strings.Split(strings.TrimSpace(result.Stdout()), "\n")
 		return len(lines), check.Commentf("output, %q", string(result.Stdout()))
@@ -288,7 +288,7 @@ func (s *DockerSwarmSuite) TestServiceLogsTTY(c *check.C) {
 	// and make sure we have all the log lines
 	waitAndAssert(c, defaultReconciliationTimeout, countLogLines(d, name), checker.Equals, 2)
 
-	cmd := d.Command("service", "logs", name)
+	cmd := d.Command("service", "logs", "--pretty=false", name)
 	result = icmd.RunCmd(cmd)
 	// for some reason there is carriage return in the output. i think this is
 	// just expected.

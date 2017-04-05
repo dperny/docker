@@ -412,6 +412,13 @@ func (c *Cluster) ServiceLogs(ctx context.Context, selector *backend.LogSelector
 				if err != nil {
 					m.Err = err
 				}
+				// copy over all of the details
+				for k, v := range msg.Details {
+					m.Attrs[k] = v
+				}
+				// we have the final say over context details (in case there
+				// is a conflict (if the user added a detail with a context's
+				// key for some reason))
 				m.Attrs[fmt.Sprintf("%v.node.id", contextPrefix)] = msg.Context.NodeID
 				m.Attrs[fmt.Sprintf("%v.service.id", contextPrefix)] = msg.Context.ServiceID
 				m.Attrs[fmt.Sprintf("%v.task.id", contextPrefix)] = msg.Context.TaskID
