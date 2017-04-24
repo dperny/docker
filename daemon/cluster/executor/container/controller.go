@@ -86,6 +86,7 @@ func (r *controller) Update(ctx context.Context, t *api.Task) error {
 	// TODO(stevvooe): While assignment of tasks is idempotent, we do allow
 	// updates of metadata, such as labelling, as well as any other properties
 	// that make sense.
+	r.task = t
 	return nil
 }
 
@@ -403,8 +404,15 @@ func (r *controller) waitReady(pctx context.Context) error {
 
 	ctnr, err := r.adapter.inspect(ctx)
 	if err != nil {
+		// if the error is Unknown Container, we might just not have created
+		// the container yet
 		if !isUnknownContainer(err) {
 			return errors.Wrap(err, "inspect container failed")
+		}
+		// however, if the container is already in shutdown or later, it's
+		// probably been removed and will never be ready
+		if r.task.Status.State >= api.TaskStateShutdown {
+			return errors.New("Container is shutdown and unknown, probably deleted")
 		}
 	} else {
 		switch ctnr.State.Status {
