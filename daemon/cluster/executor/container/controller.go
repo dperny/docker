@@ -86,6 +86,7 @@ func (r *controller) Update(ctx context.Context, t *api.Task) error {
 	// TODO(stevvooe): While assignment of tasks is idempotent, we do allow
 	// updates of metadata, such as labelling, as well as any other properties
 	// that make sense.
+	r.task = t
 	return nil
 }
 
@@ -403,7 +404,13 @@ func (r *controller) waitReady(pctx context.Context) error {
 
 	ctnr, err := r.adapter.inspect(ctx)
 	if err != nil {
-		if !isUnknownContainer(err) {
+		// if we have unknown container, it might just not be started yet and
+		// we should probably wait for it to come online, so pass it
+		//
+		// If we're RUNNING or greater and we get UnknownContainer, it probably
+		// means the container has been deleted from docker. This is an actual
+		// real error and we should return it as such
+		if !isUnknownContainer(err) || r.task.Status.State >= api.TaskStateRunning {
 			return errors.Wrap(err, "inspect container failed")
 		}
 	} else {
