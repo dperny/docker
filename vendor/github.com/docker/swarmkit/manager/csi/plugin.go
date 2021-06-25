@@ -3,6 +3,7 @@ package csi
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"google.golang.org/grpc"
 
@@ -74,7 +75,7 @@ func NewPlugin(pc plugingetter.CompatPlugin, pa plugingetter.PluginAddr, provide
 		name: pc.Name(),
 		// TODO(dperny): verify that we do not need to include the Network()
 		// portion of the Addr.
-		socket:     pa.Addr().String(),
+		socket:     fmt.Sprintf("%s://%s", pa.Addr().Network(), pa.Addr().String()),
 		provider:   provider,
 		swarmToCSI: map[string]string{},
 		csiToSwarm: map[string]string{},

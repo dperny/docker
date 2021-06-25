@@ -17,12 +17,13 @@ import (
 	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/volume/service/opts"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	// clusterVolumesVersion defines the API version that swarm cluster volume
 	// functionality was introduced. avoids the use of magic numbers.
-	clusterVolumesVersion = "1.42"
+	clusterVolumesVersion = "1.41"
 )
 
 // isNoSwarmErr is a helper function that checks if the given error is a result
@@ -118,6 +119,7 @@ func (v *volumeRouter) postVolumesCreate(ctx context.Context, w http.ResponseWri
 	}
 
 	version := httputils.VersionFromContext(ctx)
+	logrus.Debugf("request version is %s", version)
 
 	var req volumetypes.VolumeCreateBody
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -141,8 +143,10 @@ func (v *volumeRouter) postVolumesCreate(ctx context.Context, w http.ResponseWri
 	//   and cluster volumes.
 	//
 	if req.ClusterVolumeSpec != nil && versions.GreaterThanOrEqualTo(version, clusterVolumesVersion) {
+		logrus.Debug("using cluster volume")
 		volume, err = v.cluster.CreateVolume(req)
 	} else {
+		logrus.Debug("using regular volume")
 		volume, err = v.backend.Create(ctx, req.Name, req.Driver, opts.WithCreateOptions(req.DriverOpts), opts.WithCreateLabels(req.Labels))
 	}
 

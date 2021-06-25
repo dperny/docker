@@ -179,7 +179,9 @@ func (np *nodePlugin) NodeGetInfo(ctx context.Context) (*api.NodeCSIInfo, error)
 		return nil, err
 	}
 
-	return makeNodeInfo(resp), nil
+	i := makeNodeInfo(resp)
+	i.PluginName = np.name
+	return i, nil
 }
 
 func (np *nodePlugin) NodeStageVolume(ctx context.Context, req *api.VolumeAssignment) error {

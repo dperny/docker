@@ -113,7 +113,11 @@ func (pm *pluginManager) getPlugin(name string) (NodePlugin, error) {
 		return nil, fmt.Errorf("plugin does not implement PluginAddr interface")
 	}
 
-	p := pm.newNodePluginFunc(name, pa.Addr().String(), pm.secrets)
+	p := pm.newNodePluginFunc(
+		name,
+		fmt.Sprintf("%s://%s", pa.Addr().Network(), pa.Addr().String()),
+		pm.secrets,
+	)
 	pm.plugins[name] = p
 	return p, nil
 }

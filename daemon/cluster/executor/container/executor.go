@@ -52,7 +52,7 @@ func NewExecutor(b executorpkg.Backend, p plugin.Backend, i executorpkg.ImageBac
 		pluginBackend: p,
 		imageBackend:  i,
 		volumeBackend: v,
-		dependencies:  agent.NewDependencyManager(),
+		dependencies:  agent.NewDependencyManager(b.PluginGetter()),
 	}
 }
 
@@ -350,11 +350,6 @@ func (e *executor) SetNetworkBootstrapKeys(keys []*api.EncryptionKey) error {
 	e.backend.SetNetworkBootstrapKeys(nwKeys)
 
 	return nil
-}
-
-func (e *executor) SetCSINodePlugins(plugins []*api.CSINodePlugin) error {
-	pm := e.dependencies.Volumes().Plugins()
-	return pm.Set(plugins)
 }
 
 func (e *executor) Secrets() exec.SecretsManager {
