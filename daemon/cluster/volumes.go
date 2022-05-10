@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	apitypes "github.com/docker/docker/api/types"
 	volumetypes "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/daemon/cluster/convert"
 	"github.com/docker/docker/errdefs"
@@ -30,7 +29,7 @@ func (c *Cluster) GetVolume(nameOrID string) (volumetypes.Volume, error) {
 }
 
 // GetVolumes returns all of the volumes matching the given options from a swarm cluster.
-func (c *Cluster) GetVolumes(options apitypes.VolumeListOptions) ([]*volumetypes.Volume, error) {
+func (c *Cluster) GetVolumes(options volumetypes.ListOptions) ([]*volumetypes.Volume, error) {
 	var volumes []*volumetypes.Volume
 	if err := c.lockedManagerAction(func(ctx context.Context, state nodeState) error {
 		r, err := state.controlClient.ListVolumes(
@@ -104,7 +103,7 @@ func (c *Cluster) RemoveVolume(nameOrID string, force bool) error {
 }
 
 // UpdateVolume updates a volume in the swarm cluster.
-func (c *Cluster) UpdateVolume(nameOrID string, version uint64, volume volumetypes.VolumeUpdateBody) error {
+func (c *Cluster) UpdateVolume(nameOrID string, version uint64, volume volumetypes.UpdateOptions) error {
 	return c.lockedManagerAction(func(ctx context.Context, state nodeState) error {
 		v, err := getVolume(ctx, state.controlClient, nameOrID)
 		if err != nil {
@@ -117,11 +116,11 @@ func (c *Cluster) UpdateVolume(nameOrID string, version uint64, volume volumetyp
 
 		if volume.Spec != nil {
 			switch volume.Spec.Availability {
-			case volumetypes.VolumeAvailabilityActive:
+			case volumetypes.AvailabilityActive:
 				v.Spec.Availability = swarmapi.VolumeAvailabilityActive
-			case volumetypes.VolumeAvailabilityPause:
+			case volumetypes.AvailabilityPause:
 				v.Spec.Availability = swarmapi.VolumeAvailabilityPause
-			case volumetypes.VolumeAvailabilityDrain:
+			case volumetypes.AvailabilityDrain:
 				v.Spec.Availability = swarmapi.VolumeAvailabilityDrain
 			}
 			// if default empty value, change nothing.

@@ -19,7 +19,7 @@ func TestVolumeUpdateError(t *testing.T) {
 		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
 	}
 
-	err := client.VolumeUpdate(context.Background(), "", swarm.Version{}, volumetypes.VolumeUpdateBody{})
+	err := client.VolumeUpdate(context.Background(), "", swarm.Version{}, volumetypes.UpdateOptions{})
 
 	if !errdefs.IsSystem(err) {
 		t.Fatalf("expected a Server Error, got %[1]T: %[1]v", err)
@@ -48,7 +48,7 @@ func TestVolumeUpdate(t *testing.T) {
 		}),
 	}
 
-	err := client.VolumeUpdate(context.Background(), "test1", swarm.Version{Index: uint64(10)}, volumetypes.VolumeUpdateBody{})
+	err := client.VolumeUpdate(context.Background(), "test1", swarm.Version{Index: uint64(10)}, volumetypes.UpdateOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

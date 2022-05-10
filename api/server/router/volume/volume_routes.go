@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/docker/docker/api/server/httputils"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/versions"
 	"github.com/docker/docker/api/types/volume"
@@ -39,7 +38,7 @@ func (v *volumeRouter) getVolumesList(ctx context.Context, w http.ResponseWriter
 
 	version := httputils.VersionFromContext(ctx)
 	if versions.GreaterThanOrEqualTo(version, clusterVolumesVersion) && v.cluster.IsManager() {
-		clusterVolumes, swarmErr := v.cluster.GetVolumes(types.VolumeListOptions{Filters: filters})
+		clusterVolumes, swarmErr := v.cluster.GetVolumes(volume.ListOptions{Filters: filters})
 		if swarmErr != nil {
 			// if there is a swarm error, we may not want to error out right
 			// away. the local list probably worked. instead, let's do what we
@@ -155,7 +154,7 @@ func (v *volumeRouter) putVolumesUpdate(ctx context.Context, w http.ResponseWrit
 		return errdefs.InvalidParameter(err)
 	}
 
-	var req volume.VolumeUpdateBody
+	var req volume.UpdateOptions
 	if err := httputils.ReadJSON(r, &req); err != nil {
 		return err
 	}

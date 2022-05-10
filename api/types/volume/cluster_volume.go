@@ -20,10 +20,10 @@ type ClusterVolume struct {
 
 	// PublishStatus contains the status of the volume as it pertains to its
 	// publishing on Nodes.
-	PublishStatus []*VolumePublishStatus `json:",omitempty"`
+	PublishStatus []*PublishStatus `json:",omitempty"`
 
 	// Info is information about the global status of the volume.
-	Info *VolumeInfo `json:",omitempty"`
+	Info *Info `json:",omitempty"`
 }
 
 // ClusterVolumeSpec contains the spec used to create this volume.
@@ -37,7 +37,7 @@ type ClusterVolumeSpec struct {
 	Group string `json:",omitempty"`
 
 	// AccessMode defines how the volume is used by tasks.
-	AccessMode *VolumeAccessMode `json:",omitempty"`
+	AccessMode *AccessMode `json:",omitempty"`
 
 	// AccessibilityRequirements specifies where in the cluster a volume must
 	// be accessible from.
@@ -53,101 +53,101 @@ type ClusterVolumeSpec struct {
 
 	// CapacityRange defines the desired capacity that the volume should be
 	// created with. If nil, the plugin will decide the capacity.
-	CapacityRange *VolumeCapacityRange `json:",omitempty"`
+	CapacityRange *CapacityRange `json:",omitempty"`
 
 	// Secrets defines Swarm Secrets that are passed to the CSI storage plugin
 	// when operating on this volume.
-	Secrets []VolumeSecret `json:",omitempty"`
+	Secrets []Secret `json:",omitempty"`
 
 	// Availability is the Volume's desired availability. Analogous to Node
 	// Availability, this allows the user to take volumes offline in order to
 	// update or delete them.
-	Availability VolumeAvailability `json:",omitempty"`
+	Availability Availability `json:",omitempty"`
 }
 
-// VolumeAvailability specifies the availability of the volume.
-type VolumeAvailability string
+// Availability specifies the availability of the volume.
+type Availability string
 
 const (
-	// VolumeAvailabilityActive indicates that the volume is active and fully
+	// AvailabilityActive indicates that the volume is active and fully
 	// schedulable on the cluster.
-	VolumeAvailabilityActive VolumeAvailability = "active"
+	AvailabilityActive Availability = "active"
 
-	// VolumeAvailabilityPause indicates that no new workloads should use the
+	// AvailabilityPause indicates that no new workloads should use the
 	// volume, but existing workloads can continue to use it.
-	VolumeAvailabilityPause VolumeAvailability = "pause"
+	AvailabilityPause Availability = "pause"
 
-	// VolumeAvailabilityDrain indicates that all workloads using this volume
+	// AvailabilityDrain indicates that all workloads using this volume
 	// should be rescheduled, and the volume unpublished from all nodes.
-	VolumeAvailabilityDrain VolumeAvailability = "drain"
+	AvailabilityDrain Availability = "drain"
 )
 
-// VolumeAccessMode defines the access mode of a volume.
-type VolumeAccessMode struct {
+// AccessMode defines the access mode of a volume.
+type AccessMode struct {
 	// Scope defines the set of nodes this volume can be used on at one time.
-	Scope VolumeScope `json:",omitempty"`
+	Scope Scope `json:",omitempty"`
 
 	// Sharing defines the number and way that different tasks can use this
 	// volume at one time.
-	Sharing VolumeSharing `json:",omitempty"`
+	Sharing SharingMode `json:",omitempty"`
 
 	// MountVolume defines options for using this volume as a Mount-type
 	// volume.
 	//
 	// Either BlockVolume or MountVolume, but not both, must be present.
-	MountVolume *VolumeTypeMount `json:",omitempty"`
+	MountVolume *TypeMount `json:",omitempty"`
 
 	// BlockVolume defines options for using this volume as a Block-type
 	// volume.
 	//
 	// Either BlockVolume or MountVolume, but not both, must be present.
-	BlockVolume *VolumeTypeBlock `json:",omitempty"`
+	BlockVolume *TypeBlock `json:",omitempty"`
 }
 
-// VolumeScope defines the Scope of a CSI Volume. This is how many nodes a
+// Scope defines the Scope of a CSI Volume. This is how many nodes a
 // Volume can be accessed simultaneously on.
-type VolumeScope string
+type Scope string
 
 const (
-	// VolumeScopeSingleNode indicates the volume can be used on one node at a
+	// ScopeSingleNode indicates the volume can be used on one node at a
 	// time.
-	VolumeScopeSingleNode VolumeScope = "single"
+	ScopeSingleNode Scope = "single"
 
-	// VolumeScopeMultiNode indicates the volume can be used on many nodes at
+	// ScopeMultiNode indicates the volume can be used on many nodes at
 	// the same time.
-	VolumeScopeMultiNode VolumeScope = "multi"
+	ScopeMultiNode Scope = "multi"
 )
 
-// VolumeSharing defines the Sharing of a CSI Volume. This is how Tasks using a
+// SharingMode defines the Sharing of a CSI Volume. This is how Tasks using a
 // Volume at the same time can use it.
-type VolumeSharing string
+type SharingMode string
 
 const (
-	// VolumeSharingNone indicates that only one Task may use the Volume at a
+	// SharingNone indicates that only one Task may use the Volume at a
 	// time.
-	VolumeSharingNone VolumeSharing = "none"
+	SharingNone SharingMode = "none"
 
-	// VolumeSharingReadOnly indicates that the Volume may be shared by any
+	// SharingReadOnly indicates that the Volume may be shared by any
 	// number of Tasks, but they must be read-only.
-	VolumeSharingReadOnly VolumeSharing = "readonly"
+	SharingReadOnly SharingMode = "readonly"
 
-	// VolumeSharingOneWriter indicates that the Volume may be shared by any
+	// SharingOneWriter indicates that the Volume may be shared by any
 	// number of Tasks, but all after the first must be read-only.
-	VolumeSharingOneWriter VolumeSharing = "onewriter"
+	SharingOneWriter SharingMode = "onewriter"
 
-	// VolumeSharingAll means that the Volume may be shared by any number of
+	// SharingAll means that the Volume may be shared by any number of
 	// Tasks, as readers or writers.
-	VolumeSharingAll VolumeSharing = "all"
+	SharingAll SharingMode = "all"
 )
 
-// VolumeTypeBlock defines options for using a volume as a block-type volume.
+// TypeBlock defines options for using a volume as a block-type volume.
 //
 // Intentionally empty.
-type VolumeTypeBlock struct{}
+type TypeBlock struct{}
 
-// VolumeTypeMount contains options for using a volume as a Mount-type
+// TypeMount contains options for using a volume as a Mount-type
 // volume.
-type VolumeTypeMount struct {
+type TypeMount struct {
 	// FsType specifies the filesystem type for the mount volume. Optional.
 	FsType string `json:",omitempty"`
 
@@ -334,9 +334,9 @@ type Topology struct {
 	Segments map[string]string `json:",omitempty"`
 }
 
-// VolumeCapacityRange describes the minimum and maximum capacity a volume should be
+// CapacityRange describes the minimum and maximum capacity a volume should be
 // created with
-type VolumeCapacityRange struct {
+type CapacityRange struct {
 	// RequiredBytes specifies that a volume must be at least this big. The
 	// value of 0 indicates an unspecified minimum.
 	RequiredBytes uint64
@@ -346,10 +346,10 @@ type VolumeCapacityRange struct {
 	LimitBytes uint64
 }
 
-// VolumeSecret represents a Swarm Secret value that must be passed to the CSI
+// Secret represents a Swarm Secret value that must be passed to the CSI
 // storage plugin when operating on this Volume. It represents one key-value
 // pair of possibly many.
-type VolumeSecret struct {
+type Secret struct {
 	// Key is the name of the key of the key-value pair passed to the plugin.
 	Key string
 
@@ -359,47 +359,47 @@ type VolumeSecret struct {
 	Secret string
 }
 
-// VolumePublishState represents the state of a Volume as it pertains to its
+// PublishState represents the state of a Volume as it pertains to its
 // use on a particular Node.
-type VolumePublishState string
+type PublishState string
 
 const (
-	// VolumePendingPublish indicates that the volume should be published on
+	// StatePending indicates that the volume should be published on
 	// this node, but the call to ControllerPublishVolume has not been
 	// successfully completed yet and the result recorded by swarmkit.
-	VolumePendingPublish VolumePublishState = "pending publish"
+	StatePending PublishState = "pending-publish"
 
-	// VolumePublished means the volume is published successfully to the node.
-	VolumePublished VolumePublishState = "published"
+	// StatePublished means the volume is published successfully to the node.
+	StatePublished PublishState = "published"
 
-	// VolumePendingNodeUnpublish indicates that the Volume should be
+	// StatePendingNodeUnpublish indicates that the Volume should be
 	// unpublished on the Node, and we're waiting for confirmation that it has
 	// done so.  After the Node has confirmed that the Volume has been
-	// unpublished, the state will move to VolumePendingUnpublish.
-	VolumePendingNodeUnpublish VolumePublishState = "pending node unpublish"
+	// unpublished, the state will move to StatePendingUnpublish.
+	StatePendingNodeUnpublish PublishState = "pending-node-unpublish"
 
-	// VolumePendingUnpublish means the volume is still published to the node
+	// StatePendingUnpublish means the volume is still published to the node
 	// by the controller, awaiting the operation to unpublish it.
-	VolumePendingUnpublish VolumePublishState = "pending controller unpublish"
+	StatePendingUnpublish PublishState = "pending-controller-unpublish"
 )
 
-// VolumePublishStatus represents the status of the volume as published to an
+// PublishStatus represents the status of the volume as published to an
 // individual node
-type VolumePublishStatus struct {
+type PublishStatus struct {
 	// NodeID is the ID of the swarm node this Volume is published to.
 	NodeID string `json:",omitempty"`
 
 	// State is the publish state of the volume.
-	State VolumePublishState `json:",omitempty"`
+	State PublishState `json:",omitempty"`
 
 	// PublishContext is the PublishContext returned by the CSI plugin when
 	// a volume is published.
 	PublishContext map[string]string `json:",omitempty"`
 }
 
-// VolumeInfo contains information about the Volume as a whole as provided by
+// Info contains information about the Volume as a whole as provided by
 // the CSI storage plugin.
-type VolumeInfo struct {
+type Info struct {
 	// CapacityBytes is the capacity of the volume in bytes. A value of 0
 	// indicates that the capacity is unknown.
 	CapacityBytes int `json:",omitempty"`

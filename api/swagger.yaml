@@ -9480,40 +9480,7 @@ paths:
           type: "string"
       tags: ["Volume"]
 
-    delete:
-      summary: "Remove a volume"
-      description: "Instruct the driver to remove the volume."
-      operationId: "VolumeDelete"
-      responses:
-        204:
-          description: "The volume was removed"
-        404:
-          description: "No such volume or volume driver"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        409:
-          description: "Volume is in use and cannot be removed"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-        500:
-          description: "Server error"
-          schema:
-            $ref: "#/definitions/ErrorResponse"
-      parameters:
-        - name: "name"
-          in: "path"
-          required: true
-          description: "Volume name or ID"
-          type: "string"
-        - name: "force"
-          in: "query"
-          description: "Force the removal of the volume"
-          type: "boolean"
-          default: false
-      tags: ["Volume"]
-
-  /volumes/{name}/update:
-    post:
+    put:
       summary: |
         "Update a volume. Valid only for Swarm cluster volumes"
       operationId: "VolumeUpdate"
@@ -9570,6 +9537,39 @@ paths:
           format: "int64"
           required: true
       tags: ["Volume"]
+
+    delete:
+      summary: "Remove a volume"
+      description: "Instruct the driver to remove the volume."
+      operationId: "VolumeDelete"
+      responses:
+        204:
+          description: "The volume was removed"
+        404:
+          description: "No such volume or volume driver"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        409:
+          description: "Volume is in use and cannot be removed"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+        500:
+          description: "Server error"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
+      parameters:
+        - name: "name"
+          in: "path"
+          required: true
+          description: "Volume name or ID"
+          type: "string"
+        - name: "force"
+          in: "query"
+          description: "Force the removal of the volume"
+          type: "boolean"
+          default: false
+      tags: ["Volume"]
+
   /volumes/prune:
     post:
       summary: "Delete unused volumes"

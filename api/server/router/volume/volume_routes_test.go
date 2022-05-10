@@ -1,13 +1,12 @@
 package volume
 
 import (
-	"net/http/httptest"
-	"testing"
-
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http/httptest"
+	"testing"
 
 	"gotest.tools/v3/assert"
 
@@ -333,7 +332,7 @@ func TestUpdateVolume(t *testing.T) {
 		cluster: c,
 	}
 
-	volumeUpdate := volume.VolumeUpdateBody{
+	volumeUpdate := volume.UpdateOptions{
 		Spec: &volume.ClusterVolumeSpec{},
 	}
 
@@ -360,7 +359,7 @@ func TestUpdateVolumeNoSwarm(t *testing.T) {
 		cluster: c,
 	}
 
-	volumeUpdate := volume.VolumeUpdateBody{
+	volumeUpdate := volume.UpdateOptions{
 		Spec: &volume.ClusterVolumeSpec{},
 	}
 
@@ -390,7 +389,7 @@ func TestUpdateVolumeNotFound(t *testing.T) {
 		cluster: c,
 	}
 
-	volumeUpdate := volume.VolumeUpdateBody{
+	volumeUpdate := volume.UpdateOptions{
 		Spec: &volume.ClusterVolumeSpec{},
 	}
 
@@ -665,7 +664,7 @@ func (c *fakeClusterBackend) GetVolume(nameOrID string) (volume.Volume, error) {
 	return volume.Volume{}, errdefs.NotFound(fmt.Errorf("volume %s not found", nameOrID))
 }
 
-func (c *fakeClusterBackend) GetVolumes(options types.VolumeListOptions) ([]*volume.Volume, error) {
+func (c *fakeClusterBackend) GetVolumes(options volume.ListOptions) ([]*volume.Volume, error) {
 	if err := c.checkSwarm(); err != nil {
 		return nil, err
 	}
@@ -732,7 +731,7 @@ func (c *fakeClusterBackend) RemoveVolume(nameOrID string, force bool) error {
 	return nil
 }
 
-func (c *fakeClusterBackend) UpdateVolume(nameOrID string, version uint64, _ volume.VolumeUpdateBody) error {
+func (c *fakeClusterBackend) UpdateVolume(nameOrID string, version uint64, _ volume.UpdateOptions) error {
 	if err := c.checkSwarm(); err != nil {
 		return err
 	}

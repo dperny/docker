@@ -49,20 +49,20 @@ func volumeSpecToGRPC(spec volumetypes.ClusterVolumeSpec) *swarmapi.VolumeSpec {
 		swarmSpec.AccessMode = &swarmapi.VolumeAccessMode{}
 
 		switch spec.AccessMode.Scope {
-		case volumetypes.VolumeScopeSingleNode:
+		case volumetypes.ScopeSingleNode:
 			swarmSpec.AccessMode.Scope = swarmapi.VolumeScopeSingleNode
-		case volumetypes.VolumeScopeMultiNode:
+		case volumetypes.ScopeMultiNode:
 			swarmSpec.AccessMode.Scope = swarmapi.VolumeScopeMultiNode
 		}
 
 		switch spec.AccessMode.Sharing {
-		case volumetypes.VolumeSharingNone:
+		case volumetypes.SharingNone:
 			swarmSpec.AccessMode.Sharing = swarmapi.VolumeSharingNone
-		case volumetypes.VolumeSharingReadOnly:
+		case volumetypes.SharingReadOnly:
 			swarmSpec.AccessMode.Sharing = swarmapi.VolumeSharingReadOnly
-		case volumetypes.VolumeSharingOneWriter:
+		case volumetypes.SharingOneWriter:
 			swarmSpec.AccessMode.Sharing = swarmapi.VolumeSharingOneWriter
-		case volumetypes.VolumeSharingAll:
+		case volumetypes.SharingAll:
 			swarmSpec.AccessMode.Sharing = swarmapi.VolumeSharingAll
 		}
 
@@ -121,11 +121,11 @@ func volumeSpecToGRPC(spec volumetypes.ClusterVolumeSpec) *swarmapi.VolumeSpec {
 	// specify an availability, it will be inferred as the 0-value, which is
 	// "active".
 	switch spec.Availability {
-	case volumetypes.VolumeAvailabilityActive:
+	case volumetypes.AvailabilityActive:
 		swarmSpec.Availability = swarmapi.VolumeAvailabilityActive
-	case volumetypes.VolumeAvailabilityPause:
+	case volumetypes.AvailabilityPause:
 		swarmSpec.Availability = swarmapi.VolumeAvailabilityPause
-	case volumetypes.VolumeAvailabilityDrain:
+	case volumetypes.AvailabilityDrain:
 		swarmSpec.Availability = swarmapi.VolumeAvailabilityDrain
 	}
 
@@ -155,25 +155,7 @@ func VolumeCreateToGRPC(volume *volumetypes.CreateOptions) *swarmapi.VolumeSpec 
 	return swarmSpec
 }
 
-// VolumeUpdateToGRPC converts a VolumeUpdateBody to the swarm GRPC object.
-//
-// NOTE(dperny): this is not yet used, as the only thing that can be changed
-// with volumes at this time is availability.
-func VolumeUpdateToGRPC(volume *volumetypes.VolumeUpdateBody) *swarmapi.VolumeSpec {
-	var swarmSpec *swarmapi.VolumeSpec
-	if volume != nil && volume.Spec != nil {
-		swarmSpec = volumeSpecToGRPC(*volume.Spec)
-	} else {
-		swarmSpec = &swarmapi.VolumeSpec{}
-	}
-
-	// TODO(dperny): handle name, driver, etc, which are all in practice
-	// immutable.
-
-	return swarmSpec
-}
-
-func volumeInfoFromGRPC(info *swarmapi.VolumeInfo) *volumetypes.VolumeInfo {
+func volumeInfoFromGRPC(info *swarmapi.VolumeInfo) *volumetypes.Info {
 	if info == nil {
 		return nil
 	}
@@ -186,7 +168,7 @@ func volumeInfoFromGRPC(info *swarmapi.VolumeInfo) *volumetypes.VolumeInfo {
 		}
 	}
 
-	return &volumetypes.VolumeInfo{
+	return &volumetypes.Info{
 		CapacityBytes:      int(info.CapacityBytes),
 		VolumeContext:      info.VolumeContext,
 		VolumeID:           info.VolumeID,
@@ -194,26 +176,26 @@ func volumeInfoFromGRPC(info *swarmapi.VolumeInfo) *volumetypes.VolumeInfo {
 	}
 }
 
-func volumePublishStatusFromGRPC(publishStatus []*swarmapi.VolumePublishStatus) []*volumetypes.VolumePublishStatus {
+func volumePublishStatusFromGRPC(publishStatus []*swarmapi.VolumePublishStatus) []*volumetypes.PublishStatus {
 	if publishStatus == nil {
 		return nil
 	}
 
-	vps := make([]*volumetypes.VolumePublishStatus, len(publishStatus))
+	vps := make([]*volumetypes.PublishStatus, len(publishStatus))
 	for i, status := range publishStatus {
-		var state volumetypes.VolumePublishState
+		var state volumetypes.PublishState
 		switch status.State {
 		case swarmapi.VolumePublishStatus_PENDING_PUBLISH:
-			state = volumetypes.VolumePendingPublish
+			state = volumetypes.StatePending
 		case swarmapi.VolumePublishStatus_PUBLISHED:
-			state = volumetypes.VolumePublished
+			state = volumetypes.StatePublished
 		case swarmapi.VolumePublishStatus_PENDING_NODE_UNPUBLISH:
-			state = volumetypes.VolumePendingNodeUnpublish
+			state = volumetypes.StatePendingNodeUnpublish
 		case swarmapi.VolumePublishStatus_PENDING_UNPUBLISH:
-			state = volumetypes.VolumePendingUnpublish
+			state = volumetypes.StatePendingUnpublish
 		}
 
-		vps[i] = &volumetypes.VolumePublishStatus{
+		vps[i] = &volumetypes.PublishStatus{
 			NodeID:         status.NodeID,
 			State:          state,
 			PublishContext: status.PublishContext,
@@ -223,36 +205,36 @@ func volumePublishStatusFromGRPC(publishStatus []*swarmapi.VolumePublishStatus) 
 	return vps
 }
 
-func accessModeFromGRPC(accessMode *swarmapi.VolumeAccessMode) *volumetypes.VolumeAccessMode {
+func accessModeFromGRPC(accessMode *swarmapi.VolumeAccessMode) *volumetypes.AccessMode {
 	if accessMode == nil {
 		return nil
 	}
 
-	convertedAccessMode := &volumetypes.VolumeAccessMode{}
+	convertedAccessMode := &volumetypes.AccessMode{}
 
 	switch accessMode.Scope {
 	case swarmapi.VolumeScopeSingleNode:
-		convertedAccessMode.Scope = volumetypes.VolumeScopeSingleNode
+		convertedAccessMode.Scope = volumetypes.ScopeSingleNode
 	case swarmapi.VolumeScopeMultiNode:
-		convertedAccessMode.Scope = volumetypes.VolumeScopeMultiNode
+		convertedAccessMode.Scope = volumetypes.ScopeMultiNode
 	}
 
 	switch accessMode.Sharing {
 	case swarmapi.VolumeSharingNone:
-		convertedAccessMode.Sharing = volumetypes.VolumeSharingNone
+		convertedAccessMode.Sharing = volumetypes.SharingNone
 	case swarmapi.VolumeSharingReadOnly:
-		convertedAccessMode.Sharing = volumetypes.VolumeSharingReadOnly
+		convertedAccessMode.Sharing = volumetypes.SharingReadOnly
 	case swarmapi.VolumeSharingOneWriter:
-		convertedAccessMode.Sharing = volumetypes.VolumeSharingOneWriter
+		convertedAccessMode.Sharing = volumetypes.SharingOneWriter
 	case swarmapi.VolumeSharingAll:
-		convertedAccessMode.Sharing = volumetypes.VolumeSharingAll
+		convertedAccessMode.Sharing = volumetypes.SharingAll
 	}
 
 	if block := accessMode.GetBlock(); block != nil {
-		convertedAccessMode.BlockVolume = &volumetypes.VolumeTypeBlock{}
+		convertedAccessMode.BlockVolume = &volumetypes.TypeBlock{}
 	}
 	if mount := accessMode.GetMount(); mount != nil {
-		convertedAccessMode.MountVolume = &volumetypes.VolumeTypeMount{
+		convertedAccessMode.MountVolume = &volumetypes.TypeMount{
 			FsType:     mount.FsType,
 			MountFlags: mount.MountFlags,
 		}
@@ -261,13 +243,13 @@ func accessModeFromGRPC(accessMode *swarmapi.VolumeAccessMode) *volumetypes.Volu
 	return convertedAccessMode
 }
 
-func volumeSecretsFromGRPC(secrets []*swarmapi.VolumeSecret) []volumetypes.VolumeSecret {
+func volumeSecretsFromGRPC(secrets []*swarmapi.VolumeSecret) []volumetypes.Secret {
 	if secrets == nil {
 		return nil
 	}
-	convertedSecrets := make([]volumetypes.VolumeSecret, len(secrets))
+	convertedSecrets := make([]volumetypes.Secret, len(secrets))
 	for i, secret := range secrets {
-		convertedSecrets[i] = volumetypes.VolumeSecret{
+		convertedSecrets[i] = volumetypes.Secret{
 			Key:    secret.Key,
 			Secret: secret.Secret,
 		}
@@ -307,23 +289,23 @@ func topologyFromGRPC(top *swarmapi.Topology) volumetypes.Topology {
 	}
 }
 
-func capacityRangeFromGRPC(capacity *swarmapi.CapacityRange) *volumetypes.VolumeCapacityRange {
+func capacityRangeFromGRPC(capacity *swarmapi.CapacityRange) *volumetypes.CapacityRange {
 	if capacity == nil {
 		return nil
 	}
 
-	return &volumetypes.VolumeCapacityRange{
+	return &volumetypes.CapacityRange{
 		RequiredBytes: uint64(capacity.RequiredBytes),
 		LimitBytes:    uint64(capacity.LimitBytes),
 	}
 }
 
-func volumeAvailabilityFromGRPC(availability swarmapi.VolumeSpec_VolumeAvailability) volumetypes.VolumeAvailability {
+func volumeAvailabilityFromGRPC(availability swarmapi.VolumeSpec_VolumeAvailability) volumetypes.Availability {
 	switch availability {
 	case swarmapi.VolumeAvailabilityActive:
-		return volumetypes.VolumeAvailabilityActive
+		return volumetypes.AvailabilityActive
 	case swarmapi.VolumeAvailabilityPause:
-		return volumetypes.VolumeAvailabilityPause
+		return volumetypes.AvailabilityPause
 	}
-	return volumetypes.VolumeAvailabilityDrain
+	return volumetypes.AvailabilityDrain
 }

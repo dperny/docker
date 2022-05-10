@@ -45,20 +45,20 @@ func TestVolumeAvailabilityFromGRPC(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		in       swarmapi.VolumeSpec_VolumeAvailability
-		expected volumetypes.VolumeAvailability
+		expected volumetypes.Availability
 	}{
 		{
 			name:     "Active",
 			in:       swarmapi.VolumeAvailabilityActive,
-			expected: volumetypes.VolumeAvailabilityActive,
+			expected: volumetypes.AvailabilityActive,
 		}, {
 			name:     "Pause",
 			in:       swarmapi.VolumeAvailabilityPause,
-			expected: volumetypes.VolumeAvailabilityPause,
+			expected: volumetypes.AvailabilityPause,
 		}, {
 			name:     "Drain",
 			in:       swarmapi.VolumeAvailabilityDrain,
-			expected: volumetypes.VolumeAvailabilityDrain,
+			expected: volumetypes.AvailabilityDrain,
 		},
 	} {
 		tc := tc
@@ -74,7 +74,7 @@ func TestAccessModeFromGRPC(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		in       *swarmapi.VolumeAccessMode
-		expected *volumetypes.VolumeAccessMode
+		expected *volumetypes.AccessMode
 	}{
 		{
 			name: "MountVolume",
@@ -89,10 +89,10 @@ func TestAccessModeFromGRPC(t *testing.T) {
 					},
 				},
 			},
-			expected: &volumetypes.VolumeAccessMode{
-				Scope:   volumetypes.VolumeScopeSingleNode,
-				Sharing: volumetypes.VolumeSharingNone,
-				MountVolume: &volumetypes.VolumeTypeMount{
+			expected: &volumetypes.AccessMode{
+				Scope:   volumetypes.ScopeSingleNode,
+				Sharing: volumetypes.SharingNone,
+				MountVolume: &volumetypes.TypeMount{
 					FsType:     "foo",
 					MountFlags: []string{"one", "two"},
 				},
@@ -106,10 +106,10 @@ func TestAccessModeFromGRPC(t *testing.T) {
 					Block: &swarmapi.VolumeAccessMode_BlockVolume{},
 				},
 			},
-			expected: &volumetypes.VolumeAccessMode{
-				Scope:       volumetypes.VolumeScopeSingleNode,
-				Sharing:     volumetypes.VolumeSharingNone,
-				BlockVolume: &volumetypes.VolumeTypeBlock{},
+			expected: &volumetypes.AccessMode{
+				Scope:       volumetypes.ScopeSingleNode,
+				Sharing:     volumetypes.SharingNone,
+				BlockVolume: &volumetypes.TypeBlock{},
 			},
 		},
 	} {
@@ -133,15 +133,15 @@ func TestVolumeCreateToGRPC(t *testing.T) {
 
 	spec := &volumetypes.ClusterVolumeSpec{
 		Group: "gronp",
-		AccessMode: &volumetypes.VolumeAccessMode{
-			Scope:   volumetypes.VolumeScopeMultiNode,
-			Sharing: volumetypes.VolumeSharingAll,
-			MountVolume: &volumetypes.VolumeTypeMount{
+		AccessMode: &volumetypes.AccessMode{
+			Scope:   volumetypes.ScopeMultiNode,
+			Sharing: volumetypes.SharingAll,
+			MountVolume: &volumetypes.TypeMount{
 				FsType:     "foo",
 				MountFlags: []string{"one", "two"},
 			},
 		},
-		Secrets: []volumetypes.VolumeSecret{
+		Secrets: []volumetypes.Secret{
 			{Key: "key1", Secret: "secret1"},
 			{Key: "key2", Secret: "secret2"},
 		},
@@ -153,7 +153,7 @@ func TestVolumeCreateToGRPC(t *testing.T) {
 			},
 			Preferred: []volumetypes.Topology{},
 		},
-		CapacityRange: &volumetypes.VolumeCapacityRange{
+		CapacityRange: &volumetypes.CapacityRange{
 			RequiredBytes: 1,
 			LimitBytes:    0,
 		},
