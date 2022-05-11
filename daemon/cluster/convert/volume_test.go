@@ -28,8 +28,8 @@ func TestCapacityRangeFromGRPC(t *testing.T) {
 	swarmZeroCapacity := &swarmapi.CapacityRange{}
 	zeroCapacity := capacityRangeFromGRPC(swarmZeroCapacity)
 	assert.Assert(t, zeroCapacity != nil)
-	assert.Equal(t, zeroCapacity.RequiredBytes, uint64(0))
-	assert.Equal(t, zeroCapacity.LimitBytes, uint64(0))
+	assert.Equal(t, zeroCapacity.RequiredBytes, int64(0))
+	assert.Equal(t, zeroCapacity.LimitBytes, int64(0))
 
 	swarmNonZeroCapacity := &swarmapi.CapacityRange{
 		RequiredBytes: 1024,
@@ -37,8 +37,8 @@ func TestCapacityRangeFromGRPC(t *testing.T) {
 	}
 	nonZeroCapacity := capacityRangeFromGRPC(swarmNonZeroCapacity)
 	assert.Assert(t, nonZeroCapacity != nil)
-	assert.Equal(t, nonZeroCapacity.RequiredBytes, uint64(1024))
-	assert.Equal(t, nonZeroCapacity.LimitBytes, uint64(2048))
+	assert.Equal(t, nonZeroCapacity.RequiredBytes, int64(1024))
+	assert.Equal(t, nonZeroCapacity.LimitBytes, int64(2048))
 }
 
 func TestVolumeAvailabilityFromGRPC(t *testing.T) {

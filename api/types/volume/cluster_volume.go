@@ -339,11 +339,11 @@ type Topology struct {
 type CapacityRange struct {
 	// RequiredBytes specifies that a volume must be at least this big. The
 	// value of 0 indicates an unspecified minimum.
-	RequiredBytes uint64
+	RequiredBytes int64
 
 	// LimitBytes specifies that a volume must not be bigger than this. The
 	// value of 0 indicates an unspecified maximum
-	LimitBytes uint64
+	LimitBytes int64
 }
 
 // Secret represents a Swarm Secret value that must be passed to the CSI
@@ -402,7 +402,7 @@ type PublishStatus struct {
 type Info struct {
 	// CapacityBytes is the capacity of the volume in bytes. A value of 0
 	// indicates that the capacity is unknown.
-	CapacityBytes int `json:",omitempty"`
+	CapacityBytes int64 `json:",omitempty"`
 
 	// VolumeContext is the context originating from the CSI storage plugin
 	// when the Volume is created.

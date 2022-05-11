@@ -112,8 +112,8 @@ func volumeSpecToGRPC(spec volumetypes.ClusterVolumeSpec) *swarmapi.VolumeSpec {
 
 	if spec.CapacityRange != nil {
 		swarmSpec.CapacityRange = &swarmapi.CapacityRange{
-			RequiredBytes: int64(spec.CapacityRange.RequiredBytes),
-			LimitBytes:    int64(spec.CapacityRange.LimitBytes),
+			RequiredBytes: spec.CapacityRange.RequiredBytes,
+			LimitBytes:    spec.CapacityRange.LimitBytes,
 		}
 	}
 
@@ -169,7 +169,7 @@ func volumeInfoFromGRPC(info *swarmapi.VolumeInfo) *volumetypes.Info {
 	}
 
 	return &volumetypes.Info{
-		CapacityBytes:      int(info.CapacityBytes),
+		CapacityBytes:      info.CapacityBytes,
 		VolumeContext:      info.VolumeContext,
 		VolumeID:           info.VolumeID,
 		AccessibleTopology: accessibleTopology,
@@ -295,8 +295,8 @@ func capacityRangeFromGRPC(capacity *swarmapi.CapacityRange) *volumetypes.Capaci
 	}
 
 	return &volumetypes.CapacityRange{
-		RequiredBytes: uint64(capacity.RequiredBytes),
-		LimitBytes:    uint64(capacity.LimitBytes),
+		RequiredBytes: capacity.RequiredBytes,
+		LimitBytes:    capacity.LimitBytes,
 	}
 }
 

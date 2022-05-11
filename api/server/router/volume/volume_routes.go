@@ -93,19 +93,14 @@ func (v *volumeRouter) postVolumesCreate(ctx context.Context, w http.ResponseWri
 	}
 
 	var req volume.CreateOptions
-	if err := httputils.CheckForJSON(r); err != nil {
-		return err
-	}
-
-	version := httputils.VersionFromContext(ctx)
-
 	if err := httputils.ReadJSON(r, &req); err != nil {
 		return err
 	}
 
 	var (
-		vol *volume.Volume
-		err error
+		vol     *volume.Volume
+		err     error
+		version = httputils.VersionFromContext(ctx)
 	)
 
 	// if the ClusterVolumeSpec is filled in, then this is a cluster volume
@@ -140,10 +135,6 @@ func (v *volumeRouter) putVolumesUpdate(ctx context.Context, w http.ResponseWrit
 	}
 
 	if err := httputils.ParseForm(r); err != nil {
-		return err
-	}
-
-	if err := httputils.CheckForJSON(r); err != nil {
 		return err
 	}
 

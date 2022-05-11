@@ -5773,6 +5773,7 @@ definitions:
         properties:
           CapacityBytes:
             type: "integer"
+            format: "int64"
             description: |
               The capacity of the volume in bytes. A value of 0 indicates that
               the capacity is unknown.
@@ -5946,13 +5947,13 @@ definitions:
             properties:
               RequiredBytes:
                 type: "integer"
-                format: "uint64"
+                format: "int64"
                 description: |
                   The volume must be at least this big. The value of 0
                   indicates an unspecified minimum
               LimitBytes:
                 type: "integer"
-                format: "uint64"
+                format: "int64"
                 description: |
                   The volume must not be bigger than this. The value of 0
                   indicates an unspecified maximum.
