@@ -214,7 +214,7 @@ definitions:
           - `volume` a docker volume with the given `Name`.
           - `tmpfs` a `tmpfs`.
           - `npipe` a named pipe from the host into the container.
-          - `cluster` TODO add description
+          - `cluster` a Swarm cluster volume
         type: "string"
         enum:
           - "bind"
